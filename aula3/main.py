@@ -4,6 +4,7 @@ import io, os, webbrowser, os, requests
 
 image_atual = None
 image_path = None
+resized_img = None
 
 def url_download(url):
     global image_atual
@@ -18,7 +19,7 @@ def url_download(url):
         sg.popup(f"Erro ao baixar a imagem: {str(e)}")
 
 def show_image():
-    global image_atual
+    global image_atual, resized_img
     try:
         resized_img = resize_image(image_atual)
         img_bytes = io.BytesIO()
@@ -119,9 +120,25 @@ def gps_data():
     except Exception as e:
         sg.popup(f"Erro ao ler dados de GPS: {str(e)}")
 
+def negate_image_colors():
+  global image_atual
+  try:
+    if image_atual:
+      width, height = image_atual.size
+      for i in range(width):
+        for j in range(height):
+          r, g, b = image_atual.getpixel((i, j))
+          image_atual.putpixel((i, j), (255 - r, 255 - g, 255 - b))
+      show_image()
+    else:
+      sg.popup(f"Imagem não aberta")
+  except Exception as e:
+    sg.popup(f"Erro ao inverter as cores da imagem: {str(e)}")
+
 layout = [
     [sg.Menu([
             ['Arquivo', ['Abrir', 'Abrir URL', 'Salvar', 'Fechar']],
+            ['Editar', ['Inverter Imagem']],
             ['EXIF', ['Mostrar dados da imagem', 'Mostrar dados de GPS']], 
             ['Sobre a image', ['Informacoes']], 
             ['Sobre', ['Desenvolvedor']]
@@ -156,5 +173,7 @@ while True:
         gps_data()
     elif event == 'Desenvolvedor':
         sg.popup('Desenvolvido por Thiago - BCC 6º Semestre')
+    elif event == 'Inverter Imagem':
+        negate_image_colors()
 
 window.close()
