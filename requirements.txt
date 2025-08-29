@@ -1,2 +1,3 @@
 Pillow
 FreeSimpleGUI
+requests
