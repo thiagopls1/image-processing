@@ -2,13 +2,30 @@ import FreeSimpleGUI as sg
 from PIL import Image, ExifTags
 import io, os, webbrowser, os, requests
 
+# Sepia: 150, 100, 50
+
 image_atual = None
+image_anterior = None
 image_path = None
 resized_img = None
+changes_stack = []
+
+def save_last_state():
+  global image_atual, image_anterior
+  if image_atual:
+    image_anterior = image_atual.copy()
+    changes_stack.append(image_anterior)
+
+def load_last_state():
+  global image_atual, image_anterior
+  if image_atual and image_anterior:
+    image_atual = changes_stack.pop()
+    show_image()
 
 def url_download(url):
-    global image_atual
+    global image_atual, image_anterior
     try:
+        
         r = requests.get(url, stream=True)
         if r.status_code == 200:
             image_atual = Image.open(io.BytesIO(r.content))
@@ -36,8 +53,7 @@ def resize_image(img):
         sg.popup(f"Erro ao redimensionar a imagem: {str(e)}")
 
 def open_image(filename):
-    global image_atual
-    global image_path
+    global image_atual, image_path
     try:
         image_path = filename
         image_atual = Image.open(filename)    
@@ -57,8 +73,7 @@ def save_image(filename):
         sg.popup(f"Erro ao salvar a imagem: {str(e)}")
 
 def info_image():
-    global image_atual
-    global image_path
+    global image_atual, image_path
     try:
         if image_atual:
             largura, altura = image_atual.size
@@ -124,6 +139,7 @@ def negate_image_colors():
   global image_atual
   try:
     if image_atual:
+      save_last_state()
       width, height = image_atual.size
       for i in range(width):
         for j in range(height):
@@ -135,10 +151,29 @@ def negate_image_colors():
   except Exception as e:
     sg.popup(f"Erro ao inverter as cores da imagem: {str(e)}")
 
+def set_sepia():
+  global image_atual
+  try:
+    if image_atual:
+      save_last_state()
+      width, height = image_atual.size
+      for i in range(width):
+        for j in range(height):
+          r, g, b = image_atual.getpixel((i, j))
+          r = r + 150 if r + 150 <= 255 else 255
+          g = g + 100 if r + 100 <= 255 else 255
+          b = b + 50 if r + 50 <= 255 else 255
+          image_atual.putpixel((i, j), (r, g, b))
+      show_image()
+    else:
+      sg.popup(f"Imagem não aberta")
+  except Exception as e:
+    sg.popup(f"Erro ao inverter as cores da imagem: {str(e)}")
+
 layout = [
     [sg.Menu([
             ['Arquivo', ['Abrir', 'Abrir URL', 'Salvar', 'Fechar']],
-            ['Editar', ['Inverter Imagem']],
+            ['Editar', ['Inverter Imagem', 'Sepia', 'Voltar']],
             ['EXIF', ['Mostrar dados da imagem', 'Mostrar dados de GPS']], 
             ['Sobre a image', ['Informacoes']], 
             ['Sobre', ['Desenvolvedor']]
@@ -175,5 +210,9 @@ while True:
         sg.popup('Desenvolvido por Thiago - BCC 6º Semestre')
     elif event == 'Inverter Imagem':
         negate_image_colors()
+    elif event == 'Sepia':
+        set_sepia()
+    elif event == 'Voltar':
+        load_last_state()
 
 window.close()
