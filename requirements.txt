@@ -1,3 +1,6 @@
 Pillow
 FreeSimpleGUI
 requests
+opencv-python
+numpy
+# python_cv2
